@@ -35,9 +35,9 @@ export interface CircleMember {
 }
 
 export interface CreateCircleParams {
-  circle_name: string;
-  circle_desc?: string;
-  max_members?: number;
+  circleName: string;
+  description?: string;
+  maxMembers?: number;
   settings?: any;
 }
 

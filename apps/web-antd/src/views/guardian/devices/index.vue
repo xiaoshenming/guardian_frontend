@@ -528,7 +528,8 @@ const fetchDevices = async () => {
 const fetchCircles = async () => {
   try {
     const response = await getCircleList({ page: 1, pageSize: 100 });
-    circles.value = response.data.list;
+    // 后端直接返回circles数组，不是分页对象
+    circles.value = response.data || [];
   } catch (error) {
     console.error('获取守护圈列表失败:', error);
   }

@@ -198,7 +198,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { message, Modal } from 'ant-design-vue';
 import {
   PlusOutlined,
@@ -218,6 +218,7 @@ import {
 } from '#/api/guardian';
 
 const router = useRouter();
+const route = useRoute();
 
 // 响应式数据
 const circles = ref<Circle[]>([]);
@@ -270,8 +271,9 @@ const fetchCircles = async () => {
       status: statusFilter.value,
     };
     const response = await getCircleList(params);
-    circles.value = response.data.list;
-    total.value = response.data.total;
+    // 后端直接返回circles数组，不是分页对象
+    circles.value = response.data || [];
+    total.value = response.data ? response.data.length : 0;
   } catch (error) {
     console.error('获取守护圈列表失败:', error);
     message.error('获取守护圈列表失败');
@@ -307,7 +309,14 @@ const handleCreate = async () => {
     await createFormRef.value.validate();
     createLoading.value = true;
     
-    await createCircle(createForm);
+    // 映射字段名到API格式
+    const apiData = {
+      circleName: createForm.name,
+      description: createForm.description,
+      maxMembers: createForm.maxMembers,
+    };
+    
+    await createCircle(apiData);
     message.success('创建守护圈成功');
     showCreateModal.value = false;
     
@@ -398,6 +407,12 @@ const formatDate = (date: string) => {
 // 生命周期
 onMounted(() => {
   fetchCircles();
+  
+  // 处理URL参数
+  const action = route.query.action as string;
+  if (action === 'create') {
+    showCreateModal.value = true;
+  }
 });
 </script>
 
