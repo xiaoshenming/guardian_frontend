@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
         userInfo = {
           avatar: '', // 后端暂无头像字段，使用默认值
           desc: `${user.role} 用户`, // 使用角色作为描述
-          homePath: '/dashboard/analytics',
+          homePath: '/analytics',
           id: user.id.toString(),
           realName: user.loginName,
           roles: [user.role],
