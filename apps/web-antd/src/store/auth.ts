@@ -10,7 +10,7 @@ import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
 import { notification } from 'ant-design-vue';
 import { defineStore } from 'pinia';
 
-import { getAccessCodesApi, getUserInfoApi, loginApi, logoutApi } from '#/api';
+import { getAccessCodesApi, getCoreUserInfoApi as getUserInfoApi, loginApi, logoutApi } from '#/api';
 import { $t } from '#/locales';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -36,12 +36,22 @@ export const useAuthStore = defineStore('auth', () => {
       
       // 转换参数格式以适配后端接口
       const loginParams = {
-        name: params.username || params.name,
+        name: params.username || params.name || params.email,
         password: params.password,
         deviceType: 'web'
       };
       
+      console.log('Login params:', loginParams);
+      
       const response = await loginApi(loginParams);
+      console.log('Login API Response:', response);
+      
+      // requestClient配置了responseReturn: 'data'，所以直接返回data字段内容
+      // response就是LoginResult类型，包含token和user
+      if (!response || !response.token || !response.user) {
+        throw new Error('登录响应格式错误：缺少token或user字段');
+      }
+      
       const { token, user } = response;
 
       // 如果成功获取到 token
@@ -53,10 +63,10 @@ export const useAuthStore = defineStore('auth', () => {
           avatar: '', // 后端暂无头像字段，使用默认值
           desc: `${user.role} 用户`, // 使用角色作为描述
           homePath: '/analytics',
-          id: user.id.toString(),
-          realName: user.loginName,
-          roles: [user.role],
-          username: user.loginName,
+          id: user.id ? user.id.toString() : user.uid.toString(),
+          realName: user.loginName || user.username,
+          roles: [user.role.toString()],
+          username: user.loginName || user.username,
         };
 
         userStore.setUserInfo(userInfo);

@@ -66,6 +66,13 @@ const TreeSelect = defineAsyncComponent(
   () => import('ant-design-vue/es/tree-select'),
 );
 const Upload = defineAsyncComponent(() => import('ant-design-vue/es/upload'));
+const List = defineAsyncComponent(() => import('ant-design-vue/es/list'));
+const ListItem = defineAsyncComponent(() =>
+  import('ant-design-vue/es/list').then((res) => res.ListItem),
+);
+const ListItemMeta = defineAsyncComponent(() =>
+  import('ant-design-vue/es/list').then((res) => res.ListItemMeta),
+);
 
 const withDefaultPlaceholder = <T extends Component>(
   component: T,
@@ -116,6 +123,9 @@ export type ComponentType =
   | 'Input'
   | 'InputNumber'
   | 'InputPassword'
+  | 'List'
+  | 'ListItem'
+  | 'ListItemMeta'
   | 'Mentions'
   | 'PrimaryButton'
   | 'Radio'
@@ -181,6 +191,9 @@ async function initComponentAdapter() {
     Input: withDefaultPlaceholder(Input, 'input'),
     InputNumber: withDefaultPlaceholder(InputNumber, 'input'),
     InputPassword: withDefaultPlaceholder(InputPassword, 'input'),
+    List,
+    ListItem,
+    ListItemMeta,
     Mentions: withDefaultPlaceholder(Mentions, 'input'),
     // 自定义主要按钮
     PrimaryButton: (props, { attrs, slots }) => {

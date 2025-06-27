@@ -1,0 +1,273 @@
+{
+  "page": {
+    "guardian": {
+      "title": "智能守护",
+      "dashboard": "控制台",
+      "circles": "守护圈",
+      "circleDetail": "守护圈详情",
+      "devices": "设备管理",
+      "deviceDetail": "设备详情",
+      "events": "事件记录",
+      "alerts": "告警中心",
+      "settings": "系统设置"
+    }
+  },
+  "guardian": {
+    "common": {
+      "confirm": "确认",
+      "cancel": "取消",
+      "save": "保存",
+      "edit": "编辑",
+      "delete": "删除",
+      "add": "添加",
+      "search": "搜索",
+      "reset": "重置",
+      "refresh": "刷新",
+      "loading": "加载中...",
+      "noData": "暂无数据",
+      "operation": "操作",
+      "status": "状态",
+      "createTime": "创建时间",
+      "updateTime": "更新时间",
+      "actions": "操作"
+    },
+    "dashboard": {
+      "title": "智能守护控制台",
+      "welcome": "欢迎使用Guardian智能守护系统",
+      "overview": "概览",
+      "totalCircles": "守护圈总数",
+      "totalDevices": "设备总数",
+      "onlineDevices": "在线设备",
+      "todayEvents": "今日事件",
+      "urgentAlerts": "紧急告警",
+      "recentEvents": "最近事件",
+      "deviceStatus": "设备状态",
+      "alertTrend": "告警趋势",
+      "quickActions": "快捷操作",
+      "createCircle": "创建守护圈",
+      "bindDevice": "绑定设备",
+      "viewAlerts": "查看告警"
+    },
+    "circle": {
+      "title": "守护圈管理",
+      "create": "创建守护圈",
+      "join": "加入守护圈",
+      "name": "守护圈名称",
+      "description": "描述",
+      "inviteCode": "邀请码",
+      "owner": "圈主",
+      "memberCount": "成员数量",
+      "deviceCount": "设备数量",
+      "maxMembers": "最大成员数",
+      "members": "成员列表",
+      "devices": "设备列表",
+      "settings": "设置",
+      "leave": "退出守护圈",
+      "dissolve": "解散守护圈",
+      "inviteMembers": "邀请成员",
+      "memberRole": {
+        "owner": "圈主",
+        "admin": "管理员",
+        "member": "普通成员"
+      },
+      "status": {
+        "normal": "正常",
+        "disabled": "已禁用"
+      }
+    },
+    "device": {
+      "title": "设备管理",
+      "bind": "绑定设备",
+      "unbind": "解绑设备",
+      "name": "设备名称",
+      "sn": "设备序列号",
+      "type": "设备类型",
+      "model": "设备型号",
+      "circle": "所属守护圈",
+      "boundUser": "绑定用户",
+      "batteryLevel": "电量",
+      "signalStrength": "信号强度",
+      "firmwareVersion": "固件版本",
+      "hardwareVersion": "硬件版本",
+      "lastHeartbeat": "最后心跳",
+      "config": "设备配置",
+      "reboot": "重启设备",
+      "updateFirmware": "更新固件",
+      "viewLogs": "查看日志",
+      "status": {
+        "offline": "离线",
+        "online": "在线",
+        "fault": "故障"
+      }
+    },
+    "event": {
+      "title": "事件记录",
+      "type": "事件类型",
+      "device": "设备",
+      "time": "发生时间",
+      "data": "事件数据",
+      "processed": "处理状态",
+      "detail": "事件详情",
+      "export": "导出数据",
+      "filter": "筛选",
+      "types": {
+        "fall_detection": "跌倒检测",
+        "gesture_wave": "挥手手势",
+        "gesture_ok": "OK手势",
+        "motion_detection": "运动检测",
+        "sound_detection": "声音检测",
+        "emergency": "紧急求助",
+        "heartbeat": "心跳检测",
+        "battery_low": "电量不足",
+        "device_offline": "设备离线"
+      }
+    },
+    "alert": {
+      "title": "告警中心",
+      "level": "告警级别",
+      "content": "告警内容",
+      "acknowledge": "确认",
+      "resolve": "处理",
+      "ignore": "忽略",
+      "batchProcess": "批量处理",
+      "acknowledgedBy": "确认人",
+      "resolvedBy": "处理人",
+      "note": "备注",
+      "levels": {
+        "general": "一般",
+        "important": "重要",
+        "urgent": "紧急"
+      },
+      "status": {
+        "pending": "待处理",
+        "acknowledged": "已确认",
+        "resolved": "已处理"
+      }
+    },
+    "settings": {
+      "title": "系统设置",
+      "basic": "基本设置",
+      "notification": "通知设置",
+      "security": "安全设置",
+      "data": "数据设置",
+      "system": "系统信息"
+    },
+    "user": {
+      "title": "用户管理",
+      "create": "添加用户",
+      "edit": "编辑用户",
+      "detail": "用户详情",
+      "username": "用户名",
+      "email": "邮箱",
+      "realName": "真实姓名",
+      "role": "角色",
+      "status": "状态",
+      "lastLogin": "最后登录",
+      "createdAt": "注册时间",
+      "actions": {
+        "view": "查看",
+        "edit": "编辑",
+        "resetPassword": "重置密码",
+        "changeRole": "修改角色",
+        "disable": "禁用",
+        "enable": "启用",
+        "delete": "删除"
+      },
+      "roles": {
+        "admin": "管理员",
+        "user": "普通用户"
+      },
+      "statuses": {
+         "active": "活跃",
+         "inactive": "非活跃"
+       }
+     },
+     "analytics": {
+      "title": "数据分析",
+      "overview": "概览",
+      "trends": "趋势分析",
+      "reports": "统计报告",
+      "metrics": {
+        "totalUsers": "总用户数",
+        "activeCircles": "活跃守护圈",
+        "onlineDevices": "在线设备",
+        "todayEvents": "今日事件"
+      },
+      "charts": {
+        "userGrowth": "用户增长趋势",
+        "eventTypes": "事件类型分布",
+        "deviceStatus": "设备状态分布",
+        "alertLevels": "告警级别统计"
+      }
+    },
+    "monitor": {
+      "title": "系统监控",
+      "overview": "系统概览",
+      "realtime": "实时监控",
+      "services": "服务状态",
+      "logs": "系统日志",
+      "status": {
+        "system": "系统状态",
+        "alerts": "告警数量",
+        "database": "数据库",
+        "api": "API服务"
+      },
+      "charts": {
+        "cpu": "CPU使用率",
+        "memory": "内存使用率",
+        "network": "网络流量",
+        "requests": "API请求统计"
+      },
+      "actions": {
+        "refresh": "刷新数据",
+        "export": "导出日志",
+        "autoRefresh": "自动刷新",
+        "check": "检查服务",
+        "restart": "重启服务",
+        "stop": "停止服务",
+        "config": "配置管理",
+        "viewLogs": "查看日志",
+        "clearLogs": "清空日志"
+      }
+    },
+    "auth": {
+      "login": "登录",
+      "register": "注册",
+      "logout": "退出登录",
+      "forgotPassword": "忘记密码",
+      "resetPassword": "重置密码",
+      "changePassword": "修改密码",
+      "email": "邮箱",
+      "password": "密码",
+      "confirmPassword": "确认密码",
+      "username": "用户名",
+      "verificationCode": "验证码",
+      "sendCode": "发送验证码",
+      "rememberMe": "记住我",
+      "loginSuccess": "登录成功",
+      "logoutSuccess": "退出成功",
+      "registerSuccess": "注册成功"
+    },
+    "form": {
+      "required": "此字段为必填项",
+      "emailFormat": "请输入正确的邮箱格式",
+      "passwordLength": "密码长度至少6位",
+      "passwordNotMatch": "两次输入的密码不一致",
+      "codeFormat": "请输入6位验证码"
+    },
+    "message": {
+      "success": "操作成功",
+      "error": "操作失败",
+      "networkError": "网络错误，请稍后重试",
+      "unauthorized": "未授权，请重新登录",
+      "forbidden": "权限不足",
+      "notFound": "资源不存在",
+      "serverError": "服务器错误",
+      "confirmDelete": "确认删除此项？",
+      "deleteSuccess": "删除成功",
+      "saveSuccess": "保存成功",
+      "updateSuccess": "更新成功",
+      "createSuccess": "创建成功"
+    }
+  }
+}

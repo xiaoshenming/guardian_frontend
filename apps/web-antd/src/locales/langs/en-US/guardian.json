@@ -1,0 +1,196 @@
+{
+  "page": {
+    "guardian": {
+      "title": "Smart Guardian",
+      "dashboard": "Dashboard",
+      "circles": "Guardian Circles",
+      "circleDetail": "Circle Details",
+      "devices": "Device Management",
+      "deviceDetail": "Device Details",
+      "events": "Event Records",
+      "alerts": "Alert Center",
+      "settings": "System Settings"
+    }
+  },
+  "guardian": {
+    "common": {
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "save": "Save",
+      "edit": "Edit",
+      "delete": "Delete",
+      "add": "Add",
+      "search": "Search",
+      "reset": "Reset",
+      "refresh": "Refresh",
+      "loading": "Loading...",
+      "noData": "No Data",
+      "operation": "Operation",
+      "status": "Status",
+      "createTime": "Create Time",
+      "updateTime": "Update Time",
+      "actions": "Actions"
+    },
+    "dashboard": {
+      "title": "Smart Guardian Dashboard",
+      "welcome": "Welcome to Guardian Smart Guardian System",
+      "overview": "Overview",
+      "totalCircles": "Total Circles",
+      "totalDevices": "Total Devices",
+      "onlineDevices": "Online Devices",
+      "todayEvents": "Today's Events",
+      "urgentAlerts": "Urgent Alerts",
+      "recentEvents": "Recent Events",
+      "deviceStatus": "Device Status",
+      "alertTrend": "Alert Trend",
+      "quickActions": "Quick Actions",
+      "createCircle": "Create Circle",
+      "bindDevice": "Bind Device",
+      "viewAlerts": "View Alerts"
+    },
+    "circle": {
+      "title": "Guardian Circle Management",
+      "create": "Create Circle",
+      "join": "Join Circle",
+      "name": "Circle Name",
+      "description": "Description",
+      "inviteCode": "Invite Code",
+      "owner": "Owner",
+      "memberCount": "Member Count",
+      "deviceCount": "Device Count",
+      "maxMembers": "Max Members",
+      "members": "Members",
+      "devices": "Devices",
+      "settings": "Settings",
+      "leave": "Leave Circle",
+      "dissolve": "Dissolve Circle",
+      "inviteMembers": "Invite Members",
+      "memberRole": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Member"
+      },
+      "status": {
+        "normal": "Normal",
+        "disabled": "Disabled"
+      }
+    },
+    "device": {
+      "title": "Device Management",
+      "bind": "Bind Device",
+      "unbind": "Unbind Device",
+      "name": "Device Name",
+      "sn": "Serial Number",
+      "type": "Device Type",
+      "model": "Device Model",
+      "circle": "Guardian Circle",
+      "boundUser": "Bound User",
+      "batteryLevel": "Battery Level",
+      "signalStrength": "Signal Strength",
+      "firmwareVersion": "Firmware Version",
+      "hardwareVersion": "Hardware Version",
+      "lastHeartbeat": "Last Heartbeat",
+      "config": "Device Config",
+      "reboot": "Reboot Device",
+      "updateFirmware": "Update Firmware",
+      "viewLogs": "View Logs",
+      "status": {
+        "offline": "Offline",
+        "online": "Online",
+        "fault": "Fault"
+      }
+    },
+    "event": {
+      "title": "Event Records",
+      "type": "Event Type",
+      "device": "Device",
+      "time": "Time",
+      "data": "Event Data",
+      "processed": "Processed",
+      "detail": "Event Details",
+      "export": "Export Data",
+      "filter": "Filter",
+      "types": {
+        "fall_detection": "Fall Detection",
+        "gesture_wave": "Wave Gesture",
+        "gesture_ok": "OK Gesture",
+        "motion_detection": "Motion Detection",
+        "sound_detection": "Sound Detection",
+        "emergency": "Emergency",
+        "heartbeat": "Heartbeat",
+        "battery_low": "Low Battery",
+        "device_offline": "Device Offline"
+      }
+    },
+    "alert": {
+      "title": "Alert Center",
+      "level": "Alert Level",
+      "content": "Alert Content",
+      "acknowledge": "Acknowledge",
+      "resolve": "Resolve",
+      "ignore": "Ignore",
+      "batchProcess": "Batch Process",
+      "acknowledgedBy": "Acknowledged By",
+      "resolvedBy": "Resolved By",
+      "note": "Note",
+      "levels": {
+        "general": "General",
+        "important": "Important",
+        "urgent": "Urgent"
+      },
+      "status": {
+        "pending": "Pending",
+        "acknowledged": "Acknowledged",
+        "resolved": "Resolved"
+      }
+    },
+    "settings": {
+      "title": "System Settings",
+      "profile": "Profile",
+      "notifications": "Notifications",
+      "privacy": "Privacy",
+      "preferences": "Preferences",
+      "security": "Security",
+      "about": "About"
+    },
+    "auth": {
+      "login": "Login",
+      "register": "Register",
+      "logout": "Logout",
+      "forgotPassword": "Forgot Password",
+      "resetPassword": "Reset Password",
+      "changePassword": "Change Password",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "username": "Username",
+      "verificationCode": "Verification Code",
+      "sendCode": "Send Code",
+      "rememberMe": "Remember Me",
+      "loginSuccess": "Login Successful",
+      "logoutSuccess": "Logout Successful",
+      "registerSuccess": "Registration Successful"
+    },
+    "form": {
+      "required": "This field is required",
+      "emailFormat": "Please enter a valid email format",
+      "passwordLength": "Password must be at least 6 characters",
+      "passwordNotMatch": "Passwords do not match",
+      "codeFormat": "Please enter a 6-digit verification code"
+    },
+    "message": {
+      "success": "Operation Successful",
+      "error": "Operation Failed",
+      "networkError": "Network error, please try again later",
+      "unauthorized": "Unauthorized, please login again",
+      "forbidden": "Insufficient permissions",
+      "notFound": "Resource not found",
+      "serverError": "Server error",
+      "confirmDelete": "Confirm to delete this item?",
+      "deleteSuccess": "Delete Successful",
+      "saveSuccess": "Save Successful",
+      "updateSuccess": "Update Successful",
+      "createSuccess": "Create Successful"
+    }
+  }
+}
