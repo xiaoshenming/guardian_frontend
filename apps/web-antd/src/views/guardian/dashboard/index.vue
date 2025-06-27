@@ -187,7 +187,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { message } from 'ant-design-vue';
 import {
@@ -247,6 +247,9 @@ const fetchRecentEvents = async () => {
 };
 
 // 初始化设备状态图表
+let chartInitRetryCount = 0;
+const MAX_CHART_INIT_RETRIES = 10;
+
 const initDeviceChart = () => {
   if (!deviceChartRef.value) {
     console.warn('deviceChartRef.value is null');
@@ -255,15 +258,31 @@ const initDeviceChart = () => {
   
   // 检查 DOM 元素的尺寸
   const rect = deviceChartRef.value.getBoundingClientRect();
-  console.log('Chart container size:', rect.width, rect.height);
   
   if (rect.width === 0 || rect.height === 0) {
-    console.warn('Chart container has zero width or height, retrying...');
-    setTimeout(() => initDeviceChart(), 200);
-    return;
+    if (chartInitRetryCount < MAX_CHART_INIT_RETRIES) {
+      chartInitRetryCount++;
+      console.warn(`Chart container has zero width or height, retrying... (${chartInitRetryCount}/${MAX_CHART_INIT_RETRIES})`);
+      setTimeout(() => initDeviceChart(), 300);
+      return;
+    } else {
+      console.error('Chart container initialization failed after maximum retries');
+      return;
+    }
+  }
+  
+  // 重置重试计数
+  chartInitRetryCount = 0;
+  
+  // 如果图表已存在，先销毁
+  if (deviceChart) {
+    deviceChart.dispose();
   }
   
   deviceChart = echarts.init(deviceChartRef.value);
+  
+  // 设置ResizeObserver
+  setupResizeObserver();
   
   const option = {
     tooltip: {
@@ -306,6 +325,84 @@ const initDeviceChart = () => {
   
   deviceChart.setOption(option);
 };
+
+// 防抖函数
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+// 更新图表数据
+const updateDeviceChart = debounce(() => {
+  if (!deviceChart || !stats.value) {
+    return;
+  }
+  
+  const option = {
+    series: [{
+      data: [
+        { value: stats.value.onlineDevices, name: '在线', itemStyle: { color: '#52c41a' } },
+        { value: stats.value.totalDevices - stats.value.onlineDevices, name: '离线', itemStyle: { color: '#faad14' } },
+        { value: 2, name: '故障', itemStyle: { color: '#ff4d4f' } }
+      ]
+    }]
+  };
+  
+  deviceChart.setOption(option);
+}, 100);
+
+// 监听stats变化，更新图表
+watch(stats, () => {
+  updateDeviceChart();
+}, { deep: true });
+
+// 窗口大小变化时重新调整图表
+const handleResize = () => {
+  if (deviceChart) {
+    deviceChart.resize();
+  }
+};
+
+// 使用ResizeObserver监听容器尺寸变化
+let resizeObserver: ResizeObserver | null = null;
+
+const setupResizeObserver = () => {
+  if (deviceChartRef.value && window.ResizeObserver) {
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === deviceChartRef.value && deviceChart) {
+          // 使用requestAnimationFrame优化性能
+          requestAnimationFrame(() => {
+            deviceChart?.resize();
+          });
+        }
+      }
+    });
+    resizeObserver.observe(deviceChartRef.value);
+  }
+};
+
+// 组件卸载时清理
+onUnmounted(() => {
+  if (deviceChart) {
+    deviceChart.dispose();
+    deviceChart = null;
+  }
+  // 移除窗口resize事件监听
+  window.removeEventListener('resize', handleResize);
+  // 清理ResizeObserver
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+});
 
 // 获取事件图标
 const getEventIcon = (type: string) => {
@@ -396,11 +493,14 @@ onMounted(async () => {
   await fetchStats();
   await fetchRecentEvents();
   
-  // 使用 setTimeout 确保 DOM 完全渲染后再初始化图表
+  // 添加窗口大小变化监听
+  window.addEventListener('resize', handleResize);
+  
+  // 使用 nextTick 和 setTimeout 确保 DOM 完全渲染后再初始化图表
   nextTick(() => {
     setTimeout(() => {
       initDeviceChart();
-    }, 100);
+    }, 500); // 增加延迟时间，确保容器完全渲染
   });
 });
 </script>
