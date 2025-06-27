@@ -29,26 +29,47 @@ export const useAuthStore = defineStore('auth', () => {
     params: Recordable<any>,
     onSuccess?: () => Promise<void> | void,
   ) {
-    // 异步处理用户登录操作并获取 accessToken
+    // 异步处理用户登录操作并获取 token
     let userInfo: null | UserInfo = null;
     try {
       loginLoading.value = true;
-      const { accessToken } = await loginApi(params);
+      
+      // 转换参数格式以适配后端接口
+      const loginParams = {
+        name: params.username || params.name,
+        password: params.password,
+        deviceType: 'web'
+      };
+      
+      const response = await loginApi(loginParams);
+      const { token, user } = response;
 
-      // 如果成功获取到 accessToken
-      if (accessToken) {
-        accessStore.setAccessToken(accessToken);
+      // 如果成功获取到 token
+      if (token) {
+        accessStore.setAccessToken(token);
 
-        // 获取用户信息并存储到 accessStore 中
-        const [fetchUserInfoResult, accessCodes] = await Promise.all([
-          fetchUserInfo(),
-          getAccessCodesApi(),
-        ]);
-
-        userInfo = fetchUserInfoResult;
+        // 将后端用户信息转换为前端格式
+        userInfo = {
+          avatar: '', // 后端暂无头像字段，使用默认值
+          desc: `${user.role} 用户`, // 使用角色作为描述
+          homePath: '/dashboard/analytics',
+          id: user.id.toString(),
+          realName: user.loginName,
+          roles: [user.role],
+          username: user.loginName,
+        };
 
         userStore.setUserInfo(userInfo);
-        accessStore.setAccessCodes(accessCodes);
+        
+        // 获取权限码
+         try {
+           const accessCodes = await getAccessCodesApi();
+           accessStore.setAccessCodes(accessCodes);
+         } catch (error) {
+           // 如果获取权限码失败，设置默认权限
+           console.warn('获取权限码失败，使用默认权限:', error);
+           accessStore.setAccessCodes([]);
+         }
 
         if (accessStore.loginExpired) {
           accessStore.setLoginExpired(false);

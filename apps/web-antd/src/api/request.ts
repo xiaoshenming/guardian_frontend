@@ -67,6 +67,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
 
       config.headers.Authorization = formatToken(accessStore.accessToken);
       config.headers['Accept-Language'] = preferences.app.locale;
+      config.headers['devicetype'] = 'web';  // 添加设备类型头
       return config;
     },
   });
@@ -76,7 +77,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     defaultResponseInterceptor({
       codeField: 'code',
       dataField: 'data',
-      successCode: 0,
+      successCode: 200,  // Guardian后端成功状态码为200
     }),
   );
 
