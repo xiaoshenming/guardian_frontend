@@ -251,18 +251,10 @@ let chartInitRetryCount = 0;
 const MAX_CHART_INIT_RETRIES = 10;
 
 const initDeviceChart = () => {
-  if (!deviceChartRef.value) {
-    console.warn('deviceChartRef.value is null');
-    return;
-  }
-  
-  // 检查 DOM 元素的尺寸
-  const rect = deviceChartRef.value.getBoundingClientRect();
-  
-  if (rect.width === 0 || rect.height === 0) {
+  if (!isContainerReady()) {
     if (chartInitRetryCount < MAX_CHART_INIT_RETRIES) {
       chartInitRetryCount++;
-      console.warn(`Chart container has zero width or height, retrying... (${chartInitRetryCount}/${MAX_CHART_INIT_RETRIES})`);
+      console.warn(`Chart container not ready, retrying... (${chartInitRetryCount}/${MAX_CHART_INIT_RETRIES})`);
       setTimeout(() => initDeviceChart(), 300);
       return;
     } else {
@@ -339,9 +331,18 @@ const debounce = (func: Function, wait: number) => {
   };
 };
 
+// 检查容器是否准备就绪
+const isContainerReady = (): boolean => {
+  if (!deviceChartRef.value) {
+    return false;
+  }
+  const rect = deviceChartRef.value.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+};
+
 // 更新图表数据
 const updateDeviceChart = debounce(() => {
-  if (!deviceChart || !stats.value) {
+  if (!deviceChart || !stats.value || !isContainerReady()) {
     return;
   }
   
@@ -359,8 +360,11 @@ const updateDeviceChart = debounce(() => {
 }, 100);
 
 // 监听stats变化，更新图表
-watch(stats, () => {
-  updateDeviceChart();
+watch(stats, (newStats) => {
+  // 只有当图表已初始化且数据有效时才更新
+  if (deviceChart && newStats && newStats.totalDevices !== undefined) {
+    updateDeviceChart();
+  }
 }, { deep: true });
 
 // 窗口大小变化时重新调整图表
@@ -490,6 +494,9 @@ const viewAllDevices = () => {
 
 // 生命周期
 onMounted(async () => {
+  // 重置重试计数器
+  chartInitRetryCount = 0;
+  
   await fetchStats();
   await fetchRecentEvents();
   

@@ -104,3 +104,16 @@ export async function updateCircleApi(
 export async function deleteCircleApi(circleId: number): Promise<ApiResponse<any>> {
   return requestClient.delete(`/api/circle/${circleId}`);
 }
+
+// 别名导出，保持向后兼容
+export const createCircle = createCircleApi;
+export const getUserCircles = getUserCirclesApi;
+export const joinCircle = joinCircleApi;
+export const getCircleDetail = getCircleDetailApi;
+export const getCircleMembers = getCircleMembersApi;
+export const updateMemberRole = updateMemberRoleApi;
+export const removeMember = removeMemberApi;
+export const leaveCircle = leaveCircleApi;
+export const updateCircle = updateCircleApi;
+export const deleteCircle = deleteCircleApi;
+export const getCircleList = getUserCirclesApi; // 兼容旧的命名
