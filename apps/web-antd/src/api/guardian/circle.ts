@@ -1,5 +1,5 @@
-import { requestClient } from '#/api/request';
 import type { ApiResponse } from './auth';
+import { requestClient } from '../request';
 
 export interface Circle {
   id: number;
