@@ -3,39 +3,43 @@ import type { CircleApi } from '#/api/core/circle';
 import type { TableColumnsType } from 'ant-design-vue';
 
 import { onMounted, ref, reactive, computed, h } from 'vue';
-import { 
-  Button, 
-  Card, 
-  Table, 
-  Modal, 
-  Form, 
-  Input, 
-  Space, 
-  Popconfirm, 
-  Tag, 
+import {
+  Button,
+  Card,
+  Table,
+  Modal,
+  Form,
+  Input,
+  Space,
+  Popconfirm,
+  Tag,
   message,
   Tooltip,
   Empty,
-  Spin
+  Spin,
+  Switch
 } from 'ant-design-vue';
-import { 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
   EyeOutlined,
   UsergroupAddOutlined,
+  CrownOutlined,
   SettingOutlined,
+  QuestionCircleOutlined,
+  ExclamationCircleOutlined,
   ReloadOutlined
 } from '@ant-design/icons-vue';
 
 import { Page } from '@vben/common-ui';
 import { useUserStore } from '@vben/stores';
 
-import { 
-  getCircleListApi, 
-  createCircleApi, 
-  updateCircleApi, 
-  deleteCircleApi 
+import {
+  getCircleListApi,
+  createCircleApi,
+  updateCircleApi,
+  deleteCircleApi
 } from '#/api/core/circle';
 
 const userStore = useUserStore();
@@ -45,7 +49,8 @@ const state = reactive({
   circles: [] as CircleApi.CircleInfo[],
   loading: false,
   refreshing: false,
-  selectedRowKeys: [] as number[]
+  selectedRowKeys: [] as number[],
+  safeGuardEnabled: true // 安全守护开关，默认开启
 });
 
 // 模态框状态
@@ -78,15 +83,23 @@ const formRules = {
 };
 
 // 计算属性
-const userRole = computed(() => {
-  const roles = userStore.userInfo?.roles || [];
-  return roles.includes('admin') || roles.includes('管理员') ? 2 : 1;
+const isAdmin = computed(() => {
+  return userStore.userInfo?.role === 2;
 });
-
-const isAdmin = computed(() => userRole.value === 2);
 
 const currentUserId = computed(() => {
   return Number(userStore.userInfo?.id) || 0;
+});
+
+// 计算可删除的项目数量
+const canDeleteCount = computed(() => {
+  return state.selectedRowKeys.filter(id => {
+    const circle = state.circles.find(c => c.id === id);
+    if (!circle) return false;
+    
+    const isOwner = circle.creator_uid === currentUserId.value;
+    return isOwner || (isAdmin.value && !state.safeGuardEnabled);
+  }).length;
 });
 
 // 表格列定义
@@ -157,9 +170,14 @@ const columns = computed<TableColumnsType>(() => {
       width: 200,
       fixed: 'right',
       customRender: ({ record }) => {
-        const canEdit = isAdmin.value || record.creator_uid === currentUserId.value;
-        const canDelete = isAdmin.value || record.creator_uid === currentUserId.value;
+        const isOwner = record.creator_uid === currentUserId.value;
         
+        // 权限逻辑：
+        // 1. 普通用户：只能操作自己创建的圈子
+        // 2. 管理员：关闭安全守护后可以操作所有圈子，开启时只能操作自己的
+        const canEdit = isOwner || (isAdmin.value && !state.safeGuardEnabled);
+        const canDelete = isOwner || (isAdmin.value && !state.safeGuardEnabled);
+
         const buttons = [
           h(Tooltip, { title: '查看详情' }, {
             default: () => h(Button, {
@@ -193,6 +211,10 @@ const columns = computed<TableColumnsType>(() => {
         }
         
         if (canDelete) {
+          const deleteTooltip = isAdmin.value && state.safeGuardEnabled && !isOwner 
+            ? '请关闭安全守护后操作' 
+            : '删除';
+            
           buttons.push(
             h(Popconfirm, {
               title: '确定要删除这个守护圈吗？',
@@ -202,7 +224,7 @@ const columns = computed<TableColumnsType>(() => {
               cancelText: '取消',
               okType: 'danger'
             }, {
-              default: () => h(Tooltip, { title: '删除' }, {
+              default: () => h(Tooltip, { title: deleteTooltip }, {
                 default: () => h(Button, {
                   type: 'text',
                   size: 'small',
@@ -218,7 +240,7 @@ const columns = computed<TableColumnsType>(() => {
       }
     }
   ];
-  
+
   return baseColumns;
 });
 
@@ -227,7 +249,7 @@ const fetchCircles = async () => {
   try {
     state.loading = true;
     const result = await getCircleListApi();
-    
+
     // 处理响应数据
     let circles: CircleApi.CircleInfo[] = [];
     if (result?.data) {
@@ -235,11 +257,28 @@ const fetchCircles = async () => {
     } else if (Array.isArray(result)) {
       circles = result;
     }
-    
+
     state.circles = circles;
-    
+
     if (import.meta.env.DEV) {
       console.log('✅ 守护圈列表获取成功:', circles);
+      console.log('🔍 当前用户信息:', {
+        userInfo: userStore.userInfo,
+        currentUserId: currentUserId.value,
+        isAdmin: isAdmin.value,
+        safeGuardEnabled: state.safeGuardEnabled
+      });
+      
+      // 检查每个圈子的权限
+      circles.forEach(circle => {
+        const isOwner = circle.creator_uid === currentUserId.value;
+        const canEdit = isOwner || (isAdmin.value && !state.safeGuardEnabled);
+        console.log(`圈子 "${circle.circle_name}" 权限:`, {
+          creator_uid: circle.creator_uid,
+          isOwner,
+          canEdit
+        });
+      });
     }
   } catch (error) {
     console.error('获取守护圈列表失败:', error);
@@ -253,7 +292,7 @@ const fetchCircles = async () => {
 // 刷新数据
 const refreshData = async () => {
   if (state.refreshing) return;
-  
+
   try {
     state.refreshing = true;
     await fetchCircles();
@@ -271,11 +310,11 @@ const handleCreate = () => {
   modalState.title = '创建守护圈';
   modalState.currentCircle = null;
   modalState.visible = true;
-  
+
   // 重置表单
   formState.circle_name = '';
   formState.description = '';
-  
+
   // 清除表单验证
   formRef.value?.clearValidate();
 };
@@ -286,7 +325,7 @@ const handleView = (record: CircleApi.CircleInfo) => {
   modalState.title = '查看守护圈';
   modalState.currentCircle = record;
   modalState.visible = true;
-  
+
   // 填充表单数据
   formState.circle_name = record.circle_name;
   formState.description = record.description || '';
@@ -298,11 +337,11 @@ const handleEdit = (record: CircleApi.CircleInfo) => {
   modalState.title = '编辑守护圈';
   modalState.currentCircle = record;
   modalState.visible = true;
-  
+
   // 填充表单数据
   formState.circle_name = record.circle_name;
   formState.description = record.description || '';
-  
+
   // 清除表单验证
   formRef.value?.clearValidate();
 };
@@ -325,16 +364,45 @@ const handleDelete = async (id: number) => {
   }
 };
 
+// 安全守护开关处理
+const handleSafeGuardChange = (checked: boolean) => {
+  const status = checked ? '开启' : '关闭';
+  message.info(`安全守护已${status}`);
+  
+  if (!checked) {
+    message.warning('安全守护已关闭，您现在可以操作所有守护圈，请谨慎操作！', 3);
+  }
+};
+
 // 批量删除
 const handleBatchDelete = async () => {
   if (state.selectedRowKeys.length === 0) {
     message.warning('请选择要删除的守护圈');
     return;
   }
+
+  // 检查权限：只能删除有权限的圈子
+  const canDeleteIds = state.selectedRowKeys.filter(id => {
+    const circle = state.circles.find(c => c.id === id);
+    if (!circle) return false;
+    
+    const isOwner = circle.creator_uid === currentUserId.value;
+    return isOwner || (isAdmin.value && !state.safeGuardEnabled);
+  });
   
+  if (canDeleteIds.length === 0) {
+    message.warning('没有可删除的守护圈，请检查操作权限');
+    return;
+  }
+  
+  if (canDeleteIds.length < state.selectedRowKeys.length) {
+    const diff = state.selectedRowKeys.length - canDeleteIds.length;
+    message.warning(`有 ${diff} 个守护圈无权限删除，将只删除有权限的 ${canDeleteIds.length} 个`);
+  }
+
   Modal.confirm({
     title: '批量删除确认',
-    content: `确定要删除选中的 ${state.selectedRowKeys.length} 个守护圈吗？`,
+    content: `确定要删除选中的 ${canDeleteIds.length} 个守护圈吗？`,
     okText: '确定',
     cancelText: '取消',
     okType: 'danger',
@@ -342,9 +410,9 @@ const handleBatchDelete = async () => {
       try {
         // 并行删除
         await Promise.all(
-          state.selectedRowKeys.map(id => deleteCircleApi(id))
+          canDeleteIds.map(id => CircleApi.deleteCircleApi(id))
         );
-        message.success('批量删除成功');
+        message.success(`成功删除 ${canDeleteIds.length} 个守护圈`);
         state.selectedRowKeys = [];
         await fetchCircles();
       } catch (error) {
@@ -360,12 +428,12 @@ const handleSubmit = async () => {
   try {
     await formRef.value?.validate();
     modalState.confirmLoading = true;
-    
+
     const formData = {
       circle_name: formState.circle_name.trim(),
       description: formState.description.trim()
     };
-    
+
     if (modalState.mode === 'create') {
       await createCircleApi(formData);
       message.success('守护圈创建成功');
@@ -373,7 +441,7 @@ const handleSubmit = async () => {
       await updateCircleApi(modalState.currentCircle.id, formData);
       message.success('守护圈更新成功');
     }
-    
+
     modalState.visible = false;
     await fetchCircles(); // 刷新列表
   } catch (error) {
@@ -400,9 +468,18 @@ const rowSelection = computed(() => ({
   onChange: (selectedRowKeys: number[]) => {
     state.selectedRowKeys = selectedRowKeys;
   },
-  getCheckboxProps: (record: CircleApi.CircleInfo) => ({
-    disabled: !isAdmin.value && record.creator_uid !== currentUserId.value
-  })
+  onSelectAll: (selected: boolean, selectedRows: CircleApi.CircleInfo[], changeRows: CircleApi.CircleInfo[]) => {
+    console.log('全选状态:', selected, '选中行:', selectedRows, '变化行:', changeRows);
+  },
+  getCheckboxProps: (record: CircleApi.CircleInfo) => {
+    const isOwner = record.creator_uid === currentUserId.value;
+    const canDelete = isOwner || (isAdmin.value && !state.safeGuardEnabled);
+    
+    return {
+      disabled: !canDelete,
+      name: record.circle_name
+    };
+  }
 }));
 
 // 组件挂载时获取数据
@@ -421,40 +498,58 @@ onMounted(() => {
       <Card class="mb-5">
         <div class="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
           <div class="flex flex-wrap items-center gap-3">
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               @click="handleCreate"
             >
               <template #icon><PlusOutlined /></template>
               创建守护圈
             </Button>
-            
-            <Button 
+
+            <Button
               :loading="state.refreshing"
               @click="refreshData"
             >
               <template #icon><ReloadOutlined /></template>
               刷新
             </Button>
-            
-            <Button 
-              v-if="isAdmin && state.selectedRowKeys.length > 0"
+
+            <Button
+              v-if="state.selectedRowKeys.length > 0"
               danger
+              :disabled="canDeleteCount === 0"
               @click="handleBatchDelete"
             >
               <template #icon><DeleteOutlined /></template>
-              批量删除 ({{ state.selectedRowKeys.length }})
+              批量删除 ({{ canDeleteCount }}/{{ state.selectedRowKeys.length }})
             </Button>
           </div>
-          
+
           <div class="flex items-center space-x-3">
-            <Tag v-if="isAdmin" color="gold">
-              <SettingOutlined class="mr-1" />
-              管理员模式
-            </Tag>
-            <span class="text-sm text-gray-500">
-              共 {{ state.circles.length }} 个守护圈
-            </span>
+            <div v-if="isAdmin" class="flex items-center space-x-3">
+              <Tag color="gold">
+                <SettingOutlined class="mr-1" />
+                管理员模式
+              </Tag>
+              <div class="flex items-center space-x-2">
+                <span class="text-sm font-medium">安全守护：</span>
+                <Switch 
+                  v-model:checked="state.safeGuardEnabled"
+                  size="small"
+                  :checked-children="'开启'"
+                  :un-checked-children="'关闭'"
+                  @change="handleSafeGuardChange"
+                />
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-sm text-gray-500">
+                共 {{ state.circles.length }} 个守护圈
+              </div>
+              <div v-if="isAdmin && !state.safeGuardEnabled" class="text-xs text-orange-600 mt-1">
+                ⚠️ 安全守护已关闭，可操作所有圈子
+              </div>
+            </div>
           </div>
         </div>
       </Card>
@@ -478,7 +573,7 @@ onMounted(() => {
             size="middle"
           >
             <template #emptyText>
-              <Empty 
+              <Empty
                 description="暂无守护圈数据"
                 :image="Empty.PRESENTED_IMAGE_SIMPLE"
               >
@@ -507,9 +602,9 @@ onMounted(() => {
           <Button @click="handleCancel">
             取消
           </Button>
-          <Button 
+          <Button
             v-if="modalState.mode !== 'view'"
-            type="primary" 
+            type="primary"
             :loading="modalState.confirmLoading"
             @click="handleSubmit"
           >
@@ -517,7 +612,7 @@ onMounted(() => {
           </Button>
         </div>
       </template>
-      
+
       <Form
         ref="formRef"
         :model="formState"
@@ -534,7 +629,7 @@ onMounted(() => {
             show-count
           />
         </Form.Item>
-        
+
         <Form.Item label="描述信息" name="description">
           <Input.TextArea
             v-model:value="formState.description"
@@ -545,19 +640,19 @@ onMounted(() => {
             show-count
           />
         </Form.Item>
-        
+
         <!-- 查看模式下显示额外信息 -->
         <template v-if="modalState.mode === 'view' && modalState.currentCircle">
           <Form.Item label="圈子ID">
             <Input :value="modalState.currentCircle.id" disabled />
           </Form.Item>
-          
+
           <Form.Item label="邀请码" v-if="modalState.currentCircle.circle_code">
             <Input :value="modalState.currentCircle.circle_code" disabled>
               <template #suffix>
                 <Tooltip title="复制邀请码">
-                  <Button 
-                    type="text" 
+                  <Button
+                    type="text"
                     size="small"
                     @click="() => {
                       navigator.clipboard.writeText(modalState.currentCircle.circle_code);
@@ -570,11 +665,11 @@ onMounted(() => {
               </template>
             </Input>
           </Form.Item>
-          
+
           <Form.Item label="创建时间">
-            <Input 
-              :value="new Date(modalState.currentCircle.create_time).toLocaleString('zh-CN')" 
-              disabled 
+            <Input
+              :value="new Date(modalState.currentCircle.create_time).toLocaleString('zh-CN')"
+              disabled
             />
           </Form.Item>
         </template>
