@@ -57,17 +57,122 @@ const dashboardData = reactive({
 // 统计卡片配置
 const overviewItems = ref<AnalysisOverviewItem[]>([]);
 
+// 调试函数：打印响应结构（开发环境使用）
+const debugResponse = (response: any, apiName: string) => {
+  if (import.meta.env.DEV) {
+    console.log(`=== ${apiName} 响应结构调试 ===`);
+    console.log('完整响应:', response);
+    console.log('响应类型:', typeof response);
+    console.log('是否有data属性:', 'data' in (response || {}));
+    console.log('data内容:', response?.data);
+    console.log('data类型:', typeof response?.data);
+    if (response?.data) {
+      console.log('data的属性:', Object.keys(response.data));
+    }
+    console.log('========================');
+  }
+};
+
+// 数据验证函数
+const validateStatsData = (stats: any) => {
+  const requiredFields = ['totalCircles', 'totalMembers', 'totalDevices', 'totalAlerts'];
+  return requiredFields.every(field => typeof stats[field] === 'number');
+};
+
+const validateChartsData = (charts: any) => {
+  const requiredFields = ['alertTrend', 'deviceStatus', 'alertTypes', 'memberGrowth'];
+  return requiredFields.every(field => Array.isArray(charts[field]));
+};
+
+// 安全获取统计数据
+const extractStatsData = (result: any) => {
+  // requestClient已配置responseReturn: 'data'，会自动提取API响应中的data字段
+  let stats, userRole;
+  
+  if (result?.stats) {
+    stats = result.stats;
+    userRole = result.userRole;
+  } else if (result?.data?.stats) {
+    stats = result.data.stats;
+    userRole = result.data.userRole;
+  } else if (result?.data?.data?.stats) {
+    stats = result.data.data.stats;
+    userRole = result.data.data.userRole;
+  } else {
+    throw new Error('无法解析统计数据响应格式');
+  }
+  
+  // 验证数据完整性
+  if (!validateStatsData(stats)) {
+    console.warn('统计数据格式不完整，使用默认值');
+    stats = {
+      totalCircles: 0,
+      totalMembers: 0,
+      totalDevices: 0,
+      totalAlerts: 0,
+      activeDevices: 0,
+      pendingAlerts: 0,
+      myCircles: 0,
+      todayEvents: 0,
+      ...stats // 保留有效字段
+    };
+  }
+  
+  return { stats, userRole: userRole || 1 };
+};
+
+// 安全获取图表数据
+const extractChartsData = (result: any) => {
+  // requestClient已配置responseReturn: 'data'，会自动提取API响应中的data字段
+  let charts;
+  
+  if (result?.charts) {
+    charts = result.charts;
+  } else if (result?.data?.charts) {
+    charts = result.data.charts;
+  } else if (result?.data?.data?.charts) {
+    charts = result.data.data.charts;
+  } else {
+    throw new Error('无法解析图表数据响应格式');
+  }
+  
+  // 验证数据完整性
+  if (!validateChartsData(charts)) {
+    console.warn('图表数据格式不完整，使用默认值');
+    charts = {
+      alertTrend: [],
+      deviceStatus: [],
+      circleActivity: [],
+      alertTypes: [],
+      memberGrowth: [],
+      ...charts // 保留有效字段
+    };
+  }
+  
+  return charts;
+};
+
 // 获取统计数据
 const fetchStats = async () => {
   try {
     dashboardData.loading = true;
     const result = await getDashboardStatsApi();
+    
+    // 调试响应结构（仅开发环境）
+    debugResponse(result, 'getDashboardStatsApi');
+    
+    // 安全提取数据
+    const { stats, userRole } = extractStatsData(result);
 
-    dashboardData.stats = result.data.stats;
-    dashboardData.userRole = result.data.userRole;
+    dashboardData.stats = stats;
+    dashboardData.userRole = userRole;
 
     // 更新统计卡片
     updateOverviewItems();
+    
+    if (import.meta.env.DEV) {
+      console.log('✅ 统计数据获取成功:', stats);
+    }
   } catch (error) {
     console.error("获取统计数据失败:", error);
     message.error("获取统计数据失败，请稍后重试");
@@ -93,12 +198,22 @@ const fetchCharts = async () => {
   try {
     dashboardData.chartsLoading = true;
     const result = await getDashboardChartsApi();
+    
+    // 调试响应结构（仅开发环境）
+    debugResponse(result, 'getDashboardChartsApi');
+    
+    // 安全提取数据
+    const chartsData = extractChartsData(result);
 
-    dashboardData.charts = result.data.charts;
+    dashboardData.charts = chartsData;
     dashboardData.lastUpdateTime = new Date().toLocaleTimeString();
 
     // 渲染图表
     renderAllCharts();
+    
+    if (import.meta.env.DEV) {
+      console.log('✅ 图表数据获取成功:', chartsData);
+    }
   } catch (error) {
     console.error("获取图表数据失败:", error);
     message.error("获取图表数据失败，请稍后重试");
@@ -110,7 +225,7 @@ const fetchCharts = async () => {
       alertTypes: [],
       memberGrowth: []
     };
-    // 即使出错也要渲染图表（显示空状态）
+    // 即使出错也要渲染图表以显示空状态
     renderAllCharts();
   } finally {
     dashboardData.chartsLoading = false;
@@ -420,17 +535,55 @@ const getAlertTypeName = (type: string) => {
   return typeMap[type] || type;
 };
 
-// 刷新数据
-const refreshData = async () => {
+// 检查网络状态
+const checkNetworkStatus = () => {
+  if (!navigator.onLine) {
+    message.warning('网络连接已断开，请检查网络设置');
+    return false;
+  }
+  return true;
+};
+
+// 刷新数据（带重试机制）
+const refreshData = async (retryCount = 0) => {
   if (dashboardData.refreshing) return;
+  
+  if (!checkNetworkStatus()) return;
 
   try {
     dashboardData.refreshing = true;
-    await Promise.all([fetchStats(), fetchCharts()]);
-    message.success("数据刷新成功");
+    
+    // 并行获取数据，提高加载速度
+    const [statsResult, chartsResult] = await Promise.allSettled([
+      fetchStats(),
+      fetchCharts()
+    ]);
+    
+    // 检查结果
+    const statsSuccess = statsResult.status === 'fulfilled';
+    const chartsSuccess = chartsResult.status === 'fulfilled';
+    
+    if (statsSuccess && chartsSuccess) {
+      message.success("数据刷新成功");
+    } else if (statsSuccess || chartsSuccess) {
+      message.warning("部分数据刷新成功");
+    } else {
+      throw new Error('所有数据获取失败');
+    }
+    
   } catch (error) {
     console.error("数据刷新失败:", error);
-    message.error("数据刷新失败，请稍后重试");
+    
+    // 自动重试机制（最多重试2次）
+    if (retryCount < 2) {
+      console.log(`正在进行第${retryCount + 1}次重试...`);
+      setTimeout(() => {
+        refreshData(retryCount + 1);
+      }, 1000 * (retryCount + 1)); // 递增延迟
+      message.warning(`数据获取失败，正在重试... (${retryCount + 1}/2)`);
+    } else {
+      message.error("数据刷新失败，请检查网络连接或稍后重试");
+    }
   } finally {
     dashboardData.refreshing = false;
   }
