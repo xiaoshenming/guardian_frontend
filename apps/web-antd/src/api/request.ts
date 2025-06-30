@@ -77,7 +77,7 @@ function createRequestClient(baseURL: string, options?: RequestClientOptions) {
     defaultResponseInterceptor({
       codeField: 'code',
       dataField: 'data',
-      successCode: 200,  // Guardian后端成功状态码为200
+      successCode: (code: any) => [200, 201].includes(code),  // Guardian后端成功状态码为200和201
     }),
   );
 
