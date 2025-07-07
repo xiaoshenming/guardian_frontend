@@ -4,9 +4,15 @@ import { LOGIN_PATH } from '@vben/constants';
 import { preferences } from '@vben/preferences';
 import { useAccessStore, useUserStore } from '@vben/stores';
 import { startProgress, stopProgress } from '@vben/utils';
+import { message } from 'ant-design-vue';
 
 import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
+import { 
+  getUserPermissionLevel, 
+  canAccessRoute, 
+  getPermissionLevelText 
+} from '#/utils/permission';
 
 import { generateAccess } from './access';
 
@@ -85,14 +91,35 @@ function setupAccessGuard(router: Router) {
       return to;
     }
 
+    // 获取用户信息
+    const userInfo = userStore.userInfo || (await authStore.fetchUserInfo());
+    const userPermissionLevel = getUserPermissionLevel(userInfo);
+
+    // 检查页面级权限
+    if (to.name && typeof to.name === 'string') {
+      if (!canAccessRoute(to.name, userPermissionLevel)) {
+        message.error(
+          `权限不足！您当前是${getPermissionLevelText(userPermissionLevel)}，无法访问该页面。`
+        );
+        
+        // 重定向到有权限的默认页面
+        const defaultPath = userPermissionLevel >= 1 
+          ? '/guardian/dashboard' 
+          : preferences.app.defaultHomePath;
+          
+        return {
+          path: defaultPath,
+          replace: true,
+        };
+      }
+    }
+
     // 是否已经生成过动态路由
     if (accessStore.isAccessChecked) {
       return true;
     }
 
     // 生成路由表
-    // 当前登录用户拥有的角色标识列表
-    const userInfo = userStore.userInfo || (await authStore.fetchUserInfo());
     const userRoles = userInfo.roles ?? [];
 
     // 生成菜单和路由
@@ -107,6 +134,7 @@ function setupAccessGuard(router: Router) {
     accessStore.setAccessMenus(accessibleMenus);
     accessStore.setAccessRoutes(accessibleRoutes);
     accessStore.setIsAccessChecked(true);
+    
     const redirectPath = (from.query.redirect ??
       (to.path === preferences.app.defaultHomePath
         ? userInfo.homePath || preferences.app.defaultHomePath

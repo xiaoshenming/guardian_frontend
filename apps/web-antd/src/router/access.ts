@@ -5,12 +5,17 @@ import type {
 
 import { generateAccessible } from '@vben/access';
 import { preferences } from '@vben/preferences';
+import { useUserStore } from '@vben/stores';
 
 import { message } from 'ant-design-vue';
 
 import { getAllMenusApi } from '#/api';
 import { BasicLayout, IFrameView } from '#/layouts';
 import { $t } from '#/locales';
+import { 
+  getUserPermissionLevel, 
+  filterAccessibleRoutes 
+} from '#/utils/permission';
 
 const forbiddenComponent = () => import('#/views/_core/fallback/forbidden.vue');
 
@@ -22,8 +27,18 @@ async function generateAccess(options: GenerateMenuAndRoutesOptions) {
     IFrameView,
   };
 
+  // 获取用户权限级别
+  const userStore = useUserStore();
+  const userPermissionLevel = getUserPermissionLevel(userStore.userInfo);
+
+  // 根据用户权限过滤路由
+  const filteredRoutes = filterAccessibleRoutes(options.routes, userPermissionLevel);
+
+  console.log(`用户权限级别: ${userPermissionLevel}, 可访问路由数量: ${filteredRoutes.length}`);
+
   return await generateAccessible(preferences.app.accessMode, {
     ...options,
+    routes: filteredRoutes, // 使用过滤后的路由
     fetchMenuListAsync: async () => {
       message.loading({
         content: `${$t('common.loadingMenu')}...`,

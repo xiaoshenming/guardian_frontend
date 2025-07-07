@@ -12,6 +12,7 @@ import { defineStore } from 'pinia';
 
 import { getAccessCodesApi, getUserInfoApi, loginApi, logoutApi } from '#/api';
 import { $t } from '#/locales';
+import { getUserPermissionLevel, getPermissionLevelText } from '#/utils/permission';
 
 export const useAuthStore = defineStore('auth', () => {
   const accessStore = useAccessStore();
@@ -51,13 +52,23 @@ export const useAuthStore = defineStore('auth', () => {
         // 将后端用户信息转换为前端格式
         userInfo = {
           avatar: '', // 后端暂无头像字段，使用默认值
-          desc: `${user.role} 用户`, // 使用角色作为描述
-          homePath: '/analytics',
+          desc: `${getPermissionLevelText(user.role)}`, // 使用权限级别作为描述
+          homePath: '/guardian/dashboard', // 默认跳转到仪表盘
           id: user.id.toString(),
           realName: user.loginName,
           roles: [user.role],
           username: user.loginName,
         };
+        
+        // 根据用户权限级别设置默认首页
+        const permissionLevel = getUserPermissionLevel(userInfo);
+        if (permissionLevel >= 3) {
+          userInfo.homePath = '/guardian/analytics'; // 超级管理员默认到数据分析
+        } else if (permissionLevel >= 2) {
+          userInfo.homePath = '/guardian/settings'; // 管理员默认到系统设置
+        } else {
+          userInfo.homePath = '/guardian/dashboard'; // 基础用户默认到仪表盘
+        }
 
         userStore.setUserInfo(userInfo);
         
@@ -82,8 +93,9 @@ export const useAuthStore = defineStore('auth', () => {
         }
 
         if (userInfo?.realName) {
+          const permissionLevel = getUserPermissionLevel(userInfo);
           notification.success({
-            description: `${$t('authentication.loginSuccessDesc')}:${userInfo?.realName}`,
+            description: `${$t('authentication.loginSuccessDesc')}:${userInfo?.realName} (${getPermissionLevelText(permissionLevel)})`,
             duration: 3,
             message: $t('authentication.loginSuccess'),
           });
