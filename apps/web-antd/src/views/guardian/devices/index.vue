@@ -206,7 +206,7 @@ const columns = computed<TableColumnsType>(() => {
       customRender: ({ record }) => {
         const isOwner = record.bound_by_uid === currentUserId.value;
         return h('div', { class: 'flex items-center space-x-2' }, [
-          h('span', record.bound_by_username || '未知用户'),
+          h('span', record.bound_by_username),
           isOwner ? h(Tag, { color: 'blue' }, '我的') : null
         ]);
       }

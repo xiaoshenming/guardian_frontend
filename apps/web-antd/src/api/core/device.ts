@@ -13,7 +13,7 @@ export namespace DeviceApi {
     config?: string;
     circle_id?: number; // 可选，因为API响应中可能没有此字段
     bound_by_uid: number;
-    bound_by_username?: string;
+    bound_by_username: string; // 绑定者用户名
     create_time: string;
   }
 
