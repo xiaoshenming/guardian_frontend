@@ -11,11 +11,10 @@ export namespace DeviceApi {
     firmware_version?: string;
     last_heartbeat?: string;
     config?: string;
-    circle_id: number;
+    circle_id?: number; // 可选，因为API响应中可能没有此字段
     bound_by_uid: number;
+    bound_by_username?: string;
     create_time: string;
-    creator_name?: string;
-    creator_email?: string;
   }
 
   /** 绑定设备请求 */

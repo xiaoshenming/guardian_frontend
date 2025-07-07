@@ -200,13 +200,13 @@ const columns = computed<TableColumnsType>(() => {
     },
     {
       title: '绑定者',
-      dataIndex: 'creator_name',
-      key: 'creator_name',
+      dataIndex: 'bound_by_username',
+      key: 'bound_by_username',
       width: 120,
       customRender: ({ record }) => {
         const isOwner = record.bound_by_uid === currentUserId.value;
         return h('div', { class: 'flex items-center space-x-2' }, [
-          h('span', record.creator_name || '未知用户'),
+          h('span', record.bound_by_username || '未知用户'),
           isOwner ? h(Tag, { color: 'blue' }, '我的') : null
         ]);
       }
@@ -325,6 +325,11 @@ const fetchDevices = async () => {
       } else if (Array.isArray(result)) {
         devices = result;
       }
+      // 为设备添加circle_id信息
+      devices = devices.map(device => ({
+        ...device,
+        circle_id: state.selectedCircleId!
+      }));
       state.devices = devices;
     } else {
       // 获取所有圈子的设备
@@ -338,6 +343,11 @@ const fetchDevices = async () => {
           } else if (Array.isArray(result)) {
             devices = result;
           }
+          // 为每个设备添加circle_id信息
+          devices = devices.map(device => ({
+            ...device,
+            circle_id: circle.id
+          }));
           allDevices.push(...devices);
         } catch (error) {
           console.warn(`获取圈子 ${circle.circle_name} 的设备失败:`, error);
