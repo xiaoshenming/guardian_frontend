@@ -48,7 +48,7 @@ const state = reactive({
   refreshing: false,
   selectedRowKeys: [] as number[],
   safeGuardEnabled: true, // 安全守护开关，默认开启
-  selectedCircleId: null as number | null, // 当前选中的圈子ID
+  selectedCircleId: null as number | string | null, // 当前选中的圈子ID
   pagination: {
     current: 1,
     pageSize: 20,
@@ -244,16 +244,48 @@ const fetchEvents = async (page: number = state.pagination.current, pageSize: nu
 
   try {
     state.loading = true;
-    const result = await getCircleEventsApi(state.selectedCircleId, page, pageSize);
     
-    if (result?.data) {
-      state.events = result.data.events || [];
-      state.pagination.total = result.data.total || 0;
+    if (state.selectedCircleId === 'all') {
+      // 获取所有圈子的事件
+      const allEvents: EventApi.EventInfo[] = [];
+      let totalCount = 0;
+      
+      for (const circle of state.circles) {
+        try {
+          const result = await getCircleEventsApi(circle.id, 1, 1000); // 获取大量数据
+          if (result?.data) {
+            const events = result.data.events || [];
+            allEvents.push(...events);
+            totalCount += result.data.total || 0;
+          }
+        } catch (error) {
+          console.warn(`获取圈子 ${circle.circle_name} 的事件失败:`, error);
+        }
+      }
+      
+      // 按时间排序
+      allEvents.sort((a, b) => new Date(b.event_time).getTime() - new Date(a.event_time).getTime());
+      
+      // 手动分页
+      const startIndex = (page - 1) * pageSize;
+      const endIndex = startIndex + pageSize;
+      state.events = allEvents.slice(startIndex, endIndex);
+      state.pagination.total = allEvents.length;
       state.pagination.current = page;
       state.pagination.pageSize = pageSize;
     } else {
-      state.events = [];
-      state.pagination.total = 0;
+      // 获取特定圈子的事件
+      const result = await getCircleEventsApi(state.selectedCircleId, page, pageSize);
+      
+      if (result?.data) {
+        state.events = result.data.events || [];
+        state.pagination.total = result.data.total || 0;
+        state.pagination.current = page;
+        state.pagination.pageSize = pageSize;
+      } else {
+        state.events = [];
+        state.pagination.total = 0;
+      }
     }
 
     if (import.meta.env.DEV) {
@@ -286,7 +318,7 @@ const refreshData = async () => {
 };
 
 // 圈子选择变化
-const handleCircleChange = async (circleId: number | null) => {
+const handleCircleChange = async (circleId: number | string | null) => {
   state.selectedCircleId = circleId;
   state.pagination.current = 1; // 重置到第一页
   await fetchEvents(1);
@@ -414,20 +446,21 @@ onMounted(async () => {
             <div class="flex items-center space-x-2">
               <span class="text-sm font-medium">选择圈子：</span>
               <Select
-                v-model:value="state.selectedCircleId"
-                placeholder="请选择守护圈"
-                style="width: 200px"
-                allow-clear
-                @change="handleCircleChange"
-              >
-                <Select.Option
-                  v-for="circle in state.circles"
-                  :key="circle.id"
-                  :value="circle.id"
-                >
-                  {{ circle.circle_name }}
-                </Select.Option>
-              </Select>
+                 v-model:value="state.selectedCircleId"
+                 placeholder="请选择守护圈"
+                 style="width: 200px"
+                 allow-clear
+                 @change="handleCircleChange"
+               >
+                 <Select.Option value="all">全部圈子</Select.Option>
+                 <Select.Option
+                   v-for="circle in state.circles"
+                   :key="circle.id"
+                   :value="circle.id"
+                 >
+                   {{ circle.circle_name }}
+                 </Select.Option>
+               </Select>
             </div>
           </div>
 
@@ -450,11 +483,14 @@ onMounted(async () => {
             </div>
             <div class="text-right">
               <div class="text-sm text-gray-500">
-                共 {{ state.pagination.total }} 条事件记录
-                <span v-if="state.selectedCircleId">
-                  ({{ state.circles.find(c => c.id === state.selectedCircleId)?.circle_name }})
-                </span>
-              </div>
+                 共 {{ state.pagination.total }} 条事件记录
+                 <span v-if="state.selectedCircleId === 'all'">
+                   (全部圈子)
+                 </span>
+                 <span v-else-if="state.selectedCircleId">
+                   ({{ state.circles.find(c => c.id === state.selectedCircleId)?.circle_name }})
+                 </span>
+               </div>
               <div v-if="isAdmin && !state.safeGuardEnabled" class="text-xs text-orange-600 mt-1">
                 ⚠️ 安全守护已关闭，可删除事件日志
               </div>

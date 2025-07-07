@@ -56,7 +56,7 @@ const state = reactive({
   refreshing: false,
   selectedRowKeys: [] as number[],
   safeGuardEnabled: true, // 安全守护开关，默认开启
-  selectedCircleId: null as number | null // 当前选中的圈子ID
+  selectedCircleId: null as number | string | null // 当前选中的圈子ID
 });
 
 // 模态框状态
@@ -120,10 +120,7 @@ const canDeleteCount = computed(() => {
 
 // 过滤后的设备列表
 const filteredDevices = computed(() => {
-  if (!state.selectedCircleId) {
-    return state.devices;
-  }
-  return state.devices.filter(device => device.circle_id === state.selectedCircleId);
+  return state.devices;
 });
 
 // 设备状态标签
@@ -313,25 +310,16 @@ const fetchCircles = async () => {
 
 // 获取设备列表
 const fetchDevices = async () => {
+  // 如果没有选择圈子，清空设备列表
+  if (!state.selectedCircleId) {
+    state.devices = [];
+    return;
+  }
+
   try {
     state.loading = true;
     
-    // 如果选择了特定圈子，获取该圈子的设备
-    if (state.selectedCircleId) {
-      const result = await getCircleDevicesApi(state.selectedCircleId);
-      let devices: DeviceApi.DeviceInfo[] = [];
-      if (result?.data) {
-        devices = Array.isArray(result.data) ? result.data : result;
-      } else if (Array.isArray(result)) {
-        devices = result;
-      }
-      // 为设备添加circle_id信息
-      devices = devices.map(device => ({
-        ...device,
-        circle_id: state.selectedCircleId!
-      }));
-      state.devices = devices;
-    } else {
+    if (state.selectedCircleId === 'all') {
       // 获取所有圈子的设备
       const allDevices: DeviceApi.DeviceInfo[] = [];
       for (const circle of state.circles) {
@@ -354,6 +342,21 @@ const fetchDevices = async () => {
         }
       }
       state.devices = allDevices;
+    } else {
+      // 获取特定圈子的设备
+      const result = await getCircleDevicesApi(state.selectedCircleId);
+      let devices: DeviceApi.DeviceInfo[] = [];
+      if (result?.data) {
+        devices = Array.isArray(result.data) ? result.data : result;
+      } else if (Array.isArray(result)) {
+        devices = result;
+      }
+      // 为设备添加circle_id信息
+      devices = devices.map(device => ({
+        ...device,
+        circle_id: state.selectedCircleId!
+      }));
+      state.devices = devices;
     }
 
     if (import.meta.env.DEV) {
@@ -391,7 +394,7 @@ const refreshData = async () => {
 };
 
 // 圈子选择变化
-const handleCircleChange = async (circleId: number | null) => {
+const handleCircleChange = async (circleId: number | string | null) => {
   state.selectedCircleId = circleId;
   await fetchDevices();
 };
@@ -583,7 +586,6 @@ const rowSelection = computed(() => ({
 // 组件挂载时获取数据
 onMounted(async () => {
   await fetchCircles();
-  await fetchDevices();
 });
 </script>
 
@@ -624,15 +626,15 @@ onMounted(async () => {
             </Button>
 
             <div class="flex items-center space-x-2">
-              <span class="text-sm font-medium">筛选圈子：</span>
+              <span class="text-sm font-medium">选择圈子：</span>
               <Select
                 v-model:value="state.selectedCircleId"
-                placeholder="选择守护圈"
+                placeholder="请选择守护圈"
                 style="width: 200px"
                 allow-clear
                 @change="handleCircleChange"
               >
-                <Select.Option :value="null">全部圈子</Select.Option>
+                <Select.Option value="all">全部圈子</Select.Option>
                 <Select.Option
                   v-for="circle in state.circles"
                   :key="circle.id"
@@ -664,7 +666,10 @@ onMounted(async () => {
             <div class="text-right">
               <div class="text-sm text-gray-500">
                 共 {{ filteredDevices.length }} 个设备
-                <span v-if="state.selectedCircleId">
+                <span v-if="state.selectedCircleId === 'all'">
+                  (全部圈子)
+                </span>
+                <span v-else-if="state.selectedCircleId">
                   ({{ state.circles.find(c => c.id === state.selectedCircleId)?.circle_name }})
                 </span>
               </div>
@@ -696,10 +701,10 @@ onMounted(async () => {
           >
             <template #emptyText>
               <Empty
-                description="暂无设备数据"
+                :description="state.selectedCircleId ? '该圈子暂无设备' : '请先选择守护圈'"
                 :image="Empty.PRESENTED_IMAGE_SIMPLE"
               >
-                <Button type="primary" @click="handleCreate">
+                <Button v-if="state.selectedCircleId" type="primary" @click="handleCreate">
                   绑定第一个设备
                 </Button>
               </Empty>
