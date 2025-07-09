@@ -34,7 +34,8 @@ import {
   StopOutlined,
   WarningOutlined,
   FireOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
+  BellOutlined
 } from '@ant-design/icons-vue';
 
 import { Page } from '@vben/common-ui';
@@ -95,22 +96,22 @@ const canDeleteCount = computed(() => {
   return isAdmin.value && !state.safeGuardEnabled ? state.selectedRowKeys.length : 0;
 });
 
-// 告警级别标签
+// 告警级别标签 (1:紧急,2:重要,3:普通)
 const getAlertLevelTag = (level: number) => {
   const levelMap: Record<number, { color: string; text: string; icon: any }> = {
-    1: { color: 'blue', text: '低', icon: h(InfoCircleOutlined) },
-    2: { color: 'orange', text: '中', icon: h(WarningOutlined) },
-    3: { color: 'red', text: '高', icon: h(ExclamationCircleOutlined) },
-    4: { color: 'purple', text: '紧急', icon: h(FireOutlined) }
+    1: { color: 'red', text: '紧急', icon: h(FireOutlined) },
+    2: { color: 'orange', text: '重要', icon: h(ExclamationCircleOutlined) },
+    3: { color: 'blue', text: '普通', icon: h(InfoCircleOutlined) }
   };
   return levelMap[level] || { color: 'default', text: '未知', icon: h(InfoCircleOutlined) };
 };
 
-// 告警状态标签
+// 告警状态标签 (0:待处理, 1:已通知,2:已确认,3:已忽略)
 const getAlertStatusTag = (status: number) => {
   const statusMap: Record<number, { color: string; text: string; icon: any }> = {
-    1: { color: 'red', text: '待处理', icon: h(ClockCircleOutlined) },
-    2: { color: 'green', text: '已处理', icon: h(CheckCircleOutlined) },
+    0: { color: 'red', text: '待处理', icon: h(ClockCircleOutlined) },
+    1: { color: 'orange', text: '已通知', icon: h(BellOutlined) },
+    2: { color: 'green', text: '已确认', icon: h(CheckCircleOutlined) },
     3: { color: 'gray', text: '已忽略', icon: h(StopOutlined) }
   };
   return statusMap[status] || { color: 'default', text: '未知', icon: h(InfoCircleOutlined) };
@@ -121,11 +122,11 @@ const columns = computed<TableColumnsType>(() => {
   const baseColumns: TableColumnsType = [
     {
       title: '告警时间',
-      dataIndex: 'alert_time',
-      key: 'alert_time',
+      dataIndex: 'create_time',
+      key: 'create_time',
       width: 180,
       sorter: (a: AlertApi.AlertInfo, b: AlertApi.AlertInfo) => 
-        new Date(a.alert_time).getTime() - new Date(b.alert_time).getTime(),
+        new Date(a.create_time).getTime() - new Date(b.create_time).getTime(),
       customRender: ({ text }) => {
         return h('div', { class: 'flex items-center space-x-2' }, [
           h(ClockCircleOutlined, { class: 'text-gray-400' }),
@@ -172,10 +173,9 @@ const columns = computed<TableColumnsType>(() => {
       width: 100,
       align: 'center',
       filters: [
-        { text: '低', value: 1 },
-        { text: '中', value: 2 },
-        { text: '高', value: 3 },
-        { text: '紧急', value: 4 }
+        { text: '紧急', value: 1 },
+        { text: '重要', value: 2 },
+        { text: '普通', value: 3 }
       ],
       onFilter: (value: number, record: AlertApi.AlertInfo) => record.alert_level === value,
       customRender: ({ text }) => {
@@ -196,8 +196,9 @@ const columns = computed<TableColumnsType>(() => {
       width: 100,
       align: 'center',
       filters: [
-        { text: '待处理', value: 1 },
-        { text: '已处理', value: 2 },
+        { text: '待处理', value: 0 },
+        { text: '已通知', value: 1 },
+        { text: '已确认', value: 2 },
         { text: '已忽略', value: 3 }
       ],
       onFilter: (value: number, record: AlertApi.AlertInfo) => record.status === value,
@@ -222,8 +223,8 @@ const columns = computed<TableColumnsType>(() => {
     },
     {
       title: '告警消息',
-      dataIndex: 'alert_message',
-      key: 'alert_message',
+      dataIndex: 'alert_content',
+      key: 'alert_content',
       width: 200,
       ellipsis: true
     },
@@ -233,8 +234,8 @@ const columns = computed<TableColumnsType>(() => {
       key: 'handler_name',
       width: 120,
       customRender: ({ text, record }) => {
-        if (record.status === 1) return '待处理';
-        return text || '未知';
+        if (record.status === 0) return '待处理';
+        return record.acknowledged_by_username || '未知';
       }
     },
     {
@@ -255,9 +256,9 @@ const columns = computed<TableColumnsType>(() => {
         ];
         
         // 状态操作按钮
-        if (record.status === 1) {
+        if (record.status === 0) {
           buttons.push(
-            h(Tooltip, { title: '标记为已处理' }, {
+            h(Tooltip, { title: '标记为已确认' }, {
               default: () => h(Button, {
                 type: 'text',
                 size: 'small',
@@ -539,9 +540,11 @@ const rowSelection = computed(() => ({
 
 // 组件挂载时获取数据
 onMounted(async () => {
+  state.selectedCircleId = 'all';
   await Promise.all([
     fetchCircles(),
-    fetchStats()
+    fetchStats(),
+    fetchAlerts()
   ]);
 });
 </script>
@@ -750,25 +753,25 @@ onMounted(async () => {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">告警时间</label>
             <div class="text-sm text-gray-900">
-              {{ new Date(modalState.currentAlert.alert_time).toLocaleString('zh-CN') }}
+              {{ new Date(modalState.currentAlert.create_time).toLocaleString('zh-CN') }}
             </div>
           </div>
-          <div v-if="modalState.currentAlert.handled_time">
+          <div v-if="modalState.currentAlert.acknowledged_time">
             <label class="block text-sm font-medium text-gray-700 mb-1">处理时间</label>
             <div class="text-sm text-gray-900">
-              {{ new Date(modalState.currentAlert.handled_time).toLocaleString('zh-CN') }}
+              {{ new Date(modalState.currentAlert.acknowledged_time).toLocaleString('zh-CN') }}
             </div>
           </div>
-          <div v-if="modalState.currentAlert.handler_name">
+          <div v-if="modalState.currentAlert.acknowledged_by_username">
             <label class="block text-sm font-medium text-gray-700 mb-1">处理人</label>
-            <div class="text-sm text-gray-900">{{ modalState.currentAlert.handler_name }}</div>
+            <div class="text-sm text-gray-900">{{ modalState.currentAlert.acknowledged_by_username }}</div>
           </div>
         </div>
         
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">告警消息</label>
           <div class="bg-gray-50 p-3 rounded border">
-            <div class="text-sm text-gray-800">{{ modalState.currentAlert.alert_message }}</div>
+            <div class="text-sm text-gray-800">{{ modalState.currentAlert.alert_content }}</div>
           </div>
         </div>
         
@@ -788,13 +791,13 @@ onMounted(async () => {
         </div>
         
         <!-- 操作按钮 -->
-        <div v-if="modalState.currentAlert.status === 1" class="flex justify-end space-x-2 pt-4 border-t">
+        <div v-if="modalState.currentAlert.status === 0" class="flex justify-end space-x-2 pt-4 border-t">
           <Button 
             type="primary" 
             @click="handleUpdateStatus(modalState.currentAlert.id, 2); modalState.visible = false"
           >
             <template #icon><CheckCircleOutlined /></template>
-            标记为已处理
+            标记为已确认
           </Button>
           <Button 
             @click="handleUpdateStatus(modalState.currentAlert.id, 3); modalState.visible = false"
