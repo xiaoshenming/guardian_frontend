@@ -130,7 +130,7 @@ const columns = computed<TableColumnsType>(() => {
       onFilter: (value: string, record: EventApi.EventInfo) => record.event_type === value,
       customRender: ({ text }) => {
         const typeInfo = getEventTypeTag(text);
-        return h(Tag, { color: typeInfo.color }, typeInfo.text);
+        return h(Tag, { color: typeInfo.color }, { default: () => typeInfo.text });
       }
     },
     {
@@ -150,15 +150,18 @@ const columns = computed<TableColumnsType>(() => {
       key: 'event_data',
       width: 200,
       ellipsis: true,
-      customRender: ({ text }) => {
+      customRender: ({ text, record }) => {
         try {
-          const data = JSON.parse(text);
+          // 如果text是字符串，尝试解析；如果是对象，直接使用
+          const data = typeof text === 'string' ? JSON.parse(text) : text;
           const preview = JSON.stringify(data).substring(0, 50);
           return h('code', { class: 'text-xs bg-gray-100 px-2 py-1 rounded' }, 
             preview + (preview.length >= 50 ? '...' : ''));
         } catch {
+          // 如果解析失败，直接显示原始内容
+          const content = typeof text === 'string' ? text : JSON.stringify(text);
           return h('code', { class: 'text-xs bg-gray-100 px-2 py-1 rounded' }, 
-            text?.substring(0, 50) + (text?.length > 50 ? '...' : ''));
+            content?.substring(0, 50) + (content?.length > 50 ? '...' : ''));
         }
       }
     },
@@ -572,9 +575,14 @@ onMounted(async () => {
             <pre class="text-xs text-gray-800 whitespace-pre-wrap">{{ 
               (() => {
                 try {
-                  return JSON.stringify(JSON.parse(modalState.currentEvent.event_data), null, 2);
+                  const data = typeof modalState.currentEvent.event_data === 'string' 
+                    ? JSON.parse(modalState.currentEvent.event_data) 
+                    : modalState.currentEvent.event_data;
+                  return JSON.stringify(data, null, 2);
                 } catch {
-                  return modalState.currentEvent.event_data;
+                  return typeof modalState.currentEvent.event_data === 'string' 
+                    ? modalState.currentEvent.event_data 
+                    : JSON.stringify(modalState.currentEvent.event_data, null, 2);
                 }
               })()
             }}</pre>

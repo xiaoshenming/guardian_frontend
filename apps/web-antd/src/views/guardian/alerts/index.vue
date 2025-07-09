@@ -204,10 +204,12 @@ const columns = computed<TableColumnsType>(() => {
       onFilter: (value: number, record: AlertApi.AlertInfo) => record.status === value,
       customRender: ({ text }) => {
         const statusInfo = getAlertStatusTag(text);
-        return h(Tag, { color: statusInfo.color }, [
-          statusInfo.icon,
-          h('span', { class: 'ml-1' }, statusInfo.text)
-        ]);
+        return h(Tag, { color: statusInfo.color }, {
+          default: () => [
+            statusInfo.icon,
+            h('span', { class: 'ml-1' }, statusInfo.text)
+          ]
+        });
       }
     },
     {
