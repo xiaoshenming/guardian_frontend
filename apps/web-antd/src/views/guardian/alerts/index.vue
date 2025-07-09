@@ -368,11 +368,12 @@ const fetchAlerts = async (page: number = state.pagination.current, pageSize: nu
       });
     }
     
-    if (result?.data) {
-      state.alerts = result.data.alerts || [];
-      state.pagination.total = result.data.total || 0;
-      state.pagination.current = result.data.page || page;
-      state.pagination.pageSize = result.data.limit || pageSize;
+    const responseData = result?.data || result;
+    if (responseData) {
+      state.alerts = responseData.alerts || [];
+      state.pagination.total = responseData.total || 0;
+      state.pagination.current = responseData.page || page;
+      state.pagination.pageSize = responseData.limit || pageSize;
     } else {
       state.alerts = [];
       state.pagination.total = 0;

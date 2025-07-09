@@ -253,10 +253,11 @@ const fetchEvents = async (page: number = state.pagination.current, pageSize: nu
       for (const circle of state.circles) {
         try {
           const result = await getCircleEventsApi(circle.id, 1, 1000); // 获取大量数据
-          if (result?.data) {
-            const events = result.data.events || [];
+          const responseData = result?.data || result;
+          if (responseData) {
+            const events = responseData.events || [];
             allEvents.push(...events);
-            totalCount += result.data.total || 0;
+            totalCount += responseData.total || 0;
           }
         } catch (error) {
           console.warn(`获取圈子 ${circle.circle_name} 的事件失败:`, error);
@@ -277,9 +278,10 @@ const fetchEvents = async (page: number = state.pagination.current, pageSize: nu
       // 获取特定圈子的事件
       const result = await getCircleEventsApi(state.selectedCircleId, page, pageSize);
       
-      if (result?.data) {
-        state.events = result.data.events || [];
-        state.pagination.total = result.data.total || 0;
+      const responseData = result?.data || result;
+      if (responseData) {
+        state.events = responseData.events || [];
+        state.pagination.total = responseData.total || 0;
         state.pagination.current = page;
         state.pagination.pageSize = pageSize;
       } else {
