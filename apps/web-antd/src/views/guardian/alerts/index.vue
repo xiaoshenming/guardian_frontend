@@ -4,6 +4,7 @@ import type { CircleApi } from '#/api/core/circle';
 import type { TableColumnsType } from 'ant-design-vue';
 
 import { onMounted, ref, reactive, computed, h } from 'vue';
+import { getEventTypeInfo, getAlertLevelInfo, getAlertStatusInfo } from '#/utils/eventTypeMapping';
 import {
   Button,
   Card,
@@ -96,25 +97,33 @@ const canDeleteCount = computed(() => {
   return isAdmin.value && !state.safeGuardEnabled ? state.selectedRowKeys.length : 0;
 });
 
-// 告警级别标签 (1:紧急,2:重要,3:普通)
+// 获取告警级别标签
 const getAlertLevelTag = (level: number) => {
-  const levelMap: Record<number, { color: string; text: string; icon: any }> = {
-    1: { color: 'red', text: '紧急', icon: h(FireOutlined) },
-    2: { color: 'orange', text: '重要', icon: h(ExclamationCircleOutlined) },
-    3: { color: 'blue', text: '普通', icon: h(InfoCircleOutlined) }
+  const levelInfo = getAlertLevelInfo(level);
+  const iconMap: Record<number, any> = {
+    1: h(FireOutlined),
+    2: h(ExclamationCircleOutlined),
+    3: h(InfoCircleOutlined)
   };
-  return levelMap[level] || { color: 'default', text: '未知', icon: h(InfoCircleOutlined) };
+  return {
+    ...levelInfo,
+    icon: iconMap[level] || h(InfoCircleOutlined)
+  };
 };
 
-// 告警状态标签 (0:待处理, 1:已通知,2:已确认,3:已忽略)
+// 获取告警状态标签
 const getAlertStatusTag = (status: number) => {
-  const statusMap: Record<number, { color: string; text: string; icon: any }> = {
-    0: { color: 'red', text: '待处理', icon: h(ClockCircleOutlined) },
-    1: { color: 'orange', text: '已通知', icon: h(BellOutlined) },
-    2: { color: 'green', text: '已确认', icon: h(CheckCircleOutlined) },
-    3: { color: 'gray', text: '已忽略', icon: h(StopOutlined) }
+  const statusInfo = getAlertStatusInfo(status);
+  const iconMap: Record<number, any> = {
+    0: h(ClockCircleOutlined),
+    1: h(BellOutlined),
+    2: h(CheckCircleOutlined),
+    3: h(StopOutlined)
   };
-  return statusMap[status] || { color: 'default', text: '未知', icon: h(InfoCircleOutlined) };
+  return {
+    ...statusInfo,
+    icon: iconMap[status] || h(InfoCircleOutlined)
+  };
 };
 
 // 表格列定义
@@ -156,14 +165,8 @@ const columns = computed<TableColumnsType>(() => {
       ],
       onFilter: (value: string, record: AlertApi.AlertInfo) => record.alert_type === value,
       customRender: ({ text }) => {
-        const typeMap: Record<string, string> = {
-          'device_offline': '设备离线',
-          'sensor_error': '传感器异常',
-          'low_battery': '电量不足',
-          'network_error': '网络异常',
-          'other': '其他'
-        };
-        return typeMap[text] || text;
+        const typeInfo = getEventTypeInfo(text);
+        return typeInfo.text;
       }
     },
     {

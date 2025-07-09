@@ -15,6 +15,7 @@ import {
 } from '@vben/icons';
 
 import { getDashboardStatsApi, getDashboardChartsApi } from '#/api/core/dashboard';
+import { getEventTypeInfo } from '#/utils/eventTypeMapping';
 
 // 图表引用
 const alertTrendRef = ref<EchartsUIType>();
@@ -524,15 +525,8 @@ const renderMemberGrowthChart = () => {
 
 // 告警类型名称转换
 const getAlertTypeName = (type: string) => {
-  const typeMap: Record<string, string> = {
-    fall_detection: "跌倒检测",
-    heart_rate_abnormal: "心率异常",
-    temperature_abnormal: "体温异常",
-    location_abnormal: "位置异常",
-    device_offline: "设备离线",
-    emergency: "紧急求助"
-  };
-  return typeMap[type] || type;
+  const typeInfo = getEventTypeInfo(type);
+  return typeInfo.text;
 };
 
 // 检查网络状态

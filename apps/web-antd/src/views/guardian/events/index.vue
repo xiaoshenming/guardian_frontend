@@ -4,6 +4,7 @@ import type { CircleApi } from '#/api/core/circle';
 import type { TableColumnsType } from 'ant-design-vue';
 
 import { onMounted, ref, reactive, computed, h } from 'vue';
+import { getEventTypeInfo, getEventTypeFilters } from '#/utils/eventTypeMapping';
 import {
   Button,
   Card,
@@ -78,15 +79,11 @@ const canDeleteCount = computed(() => {
 
 // 事件类型标签
 const getEventTypeTag = (eventType: string) => {
-  const typeMap: Record<string, { color: string; text: string }> = {
-    'alert': { color: 'red', text: '告警' },
-    'heartbeat': { color: 'green', text: '心跳' },
-    'status_change': { color: 'blue', text: '状态变更' },
-    'config_update': { color: 'orange', text: '配置更新' },
-    'device_online': { color: 'green', text: '设备上线' },
-    'device_offline': { color: 'red', text: '设备离线' }
+  const typeInfo = getEventTypeInfo(eventType);
+  return {
+    color: typeInfo.color,
+    text: typeInfo.text
   };
-  return typeMap[eventType] || { color: 'default', text: eventType };
 };
 
 // 表格列定义
@@ -119,15 +116,11 @@ const columns = computed<TableColumnsType>(() => {
       dataIndex: 'event_type',
       key: 'event_type',
       width: 120,
-      filters: [
-        { text: '告警', value: 'alert' },
-        { text: '心跳', value: 'heartbeat' },
-        { text: '状态变更', value: 'status_change' },
-        { text: '配置更新', value: 'config_update' },
-        { text: '设备上线', value: 'device_online' },
-        { text: '设备离线', value: 'device_offline' }
-      ],
-      onFilter: (value: string, record: EventApi.EventInfo) => record.event_type === value,
+      filters: getEventTypeFilters(),
+      onFilter: (value: string, record: EventApi.EventInfo) => {
+        const typeInfo = getEventTypeInfo(record.event_type);
+        return typeInfo.category === value;
+      },
       customRender: ({ text }) => {
         const typeInfo = getEventTypeTag(text);
         return h(Tag, { color: typeInfo.color }, { default: () => typeInfo.text });
