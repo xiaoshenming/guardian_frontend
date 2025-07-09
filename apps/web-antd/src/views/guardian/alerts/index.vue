@@ -545,11 +545,10 @@ const rowSelection = computed(() => ({
 
 // 组件挂载时获取数据
 onMounted(async () => {
-  state.selectedCircleId = 'all';
   await Promise.all([
     fetchCircles(),
-    fetchStats(),
-    fetchAlerts()
+    fetchStats()
+    // 不默认选择圈子，需要用户手动选择
   ]);
 });
 </script>
